@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<style>
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			overflow: hidden;
+			display: block;
+		}
+	</style>
+</head>
+
+<body>
+
+	<canvas id="canvas" width="100" height="100" style="border:1px solid #000;">
+		Your browser does not support the HTML5 canvas tag.
+	</canvas>
+
+	<script type="text/javascript">
+
+		var colorBg = '#0'//'#3f3f3fff';
+		var maskFade = '#0000000f';//'#ffffff0f'
+		//var colorFade = colorBg & maskFade;
+		var colorFade = '#0000000f';//'#3f3f3f10';
+		lastRender = 0;
+
+
+
+		class MyCanvas {
+
+			constructor(canvas) {
+				this.canvas = canvas;
+				if (!!window.CanvasRenderingContext2D) {
+					this.ctx2d = this.canvas.getContext('2d');
+					this.resize(1, 1);
+					//context.clearRect(0, 0, canvas.width, canvas.height);
+
+					console.log('CONTEXT 2D SUPPORTED');
+
+				} else {
+					console.log('CONTEXT 2D NOT SUPPORTED');
+				}
+
+			}
+
+			init() {
+			}
+
+			resize(w, h) {
+
+				this.canvas.width = w;
+				this.canvas.height = h;
+				this.width = this.canvas.width;
+				this.height = this.canvas.height;
+				this.ctx2d.fillStyle = colorBg;
+				this.ctx2d.fillRect(0, 0, this.width, this.height);
+				console.log('Class Context size changed to ' + this.width + ' x ' + this.height);
+			}
+
+
+			getWidth() { return this.width; }
+			getHeight() { return this.height; }
+			getContext2d() { return this.ctx2d; }
+
+			/*Graphics primitives*/
+
+			drawRect(x, y, w, h, c) {
+				this.ctx2d.beginPath();
+				this.ctx2d.strokeStyle = c;
+				this.ctx2d.moveTo(x, y);
+				this.ctx2d.strokeRect(x, y, w, h);
+				this.ctx2d.stroke();
+			}
+			drawLine(x, y, x1, y1, c) {
+				this.ctx2d.beginPath();
+				this.ctx2d.strokeStyle = c;
+				this.ctx2d.moveTo(x, y);
+				this.ctx2d.lineTo(x1, y1);
+				this.ctx2d.stroke();
+			}
+			beginLine(x, y, c) {
+				this.ctx2d.beginPath();
+				this.ctx2d.strokeStyle = c;
+				this.ctx2d.moveTo(x, y);
+			}
+			extendLine(x, y) {
+				this.ctx2d.lineTo(x, y);
+			}
+			endLine() {
+				this.ctx2d.stroke();
+			}
+
+
+			drawCircle(x, y, r, c) {
+				this.ctx2d.strokeStyle = c;
+				this.ctx2d.moveTo(x + r, y);
+				this.ctx2d.beginPath();
+				this.ctx2d.arc(x, y, r, 0, Math.PI * 2);
+				this.ctx2d.stroke();
+
+			}
+
+			fillRect(x, y, w, h, c) {
+				this.ctx2d.fillStyle = c;
+				this.ctx2d.fillRect(x, y, w, h);
+			}
+
+			drawImage(img, x, y) {
+				this.ctx2d.drawImage(img, x, y);
+			}
+
+			dimRect(x, y, w, h, am) {
+				let col = 'rgb(' + am + ',' + am + ',' + am + ')';
+				canvas.ctx2d.globalCompositeOperation = "difference";
+				this.fillRect(0, 0, w, h, col);
+				//canvas.fillRect(0,0,width,height,'#00000040');
+				canvas.ctx2d.globalCompositeOperation = "source-over";
+			}
+		}
+
+		var midVal = [0, 0, 0, 0];
+
+		function main() {
+
+
+			cv = document.getElementById('canvas');
+			canvas = new MyCanvas(cv);
+			cv = document.getElementById('canvas');
+			tempCanvas = new MyCanvas(cv);
+
+			//ctx = canvas.getContext2d();
+
+			//var width = canvas.getWidth();
+			//var height = canvas.getHeight();
+			var timeDelta = 0;
+			var width = 1, height = 1;
+
+			function map(x, in_min, in_max, out_min, out_max) {
+				return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+			}
+
+			function rand(btm, top) {
+				return Math.random() * (top - btm) + btm;
+			}
+
+			function randColorRgb(btm, top) {
+				const r = rand(btm, top);
+				const g = rand(btm, top);
+				const b = rand(btm, top);
+				//const rCol = 'rgb(${r},${g},${b})'
+				const rCol = 'rgb(' + r + ',' + g + ',' + b + ')'
+				return rCol;
+			}
+
+			startFade = 0;
+			function draw(deltaT) {
+				now = Date.now();
+				if (false) {
+					//every second fade down
+					let imageData = tempCanvas.ctx2d.getImageData(0, 0, width, height);
+					let pixels = imageData.data;
+					if (!startFade)
+						startFade = now;
+					else if (now - startFade >= 1.0) {
+
+						for (var i = 0; i < pixels.length; i += 4) {
+							//pixels[i] = (pixels[i]* dimFac)<<0;
+							//pixels[i+1] = (pixels[i+1]* dimFac)<<0;
+							//pixels[i+2] = (pixels[i+2]* dimFac)<<0;
+							pixels[i] = (pixels[i] * 255) >> 8;
+							pixels[i + 1] = (pixels[i + 1] * 255) >> 8;
+							pixels[i + 2] = (pixels[i + 2] * 255) >> 8;
+						}
+						startFade = now;
+					}
+					tempCanvas.ctx2d.putImageData(imageData, 0, 0);
+
+					tempCanvas.drawLine(rand(10, width - 10), rand(10, height - 10), rand(10, width - 10), rand(10, height - 10), randColorRgb(50, 255));
+					canvas.drawImage(tempCanvas.canvas, 0, 0);
+				} else {
+					canvas.dimRect(0, 0, width, height, 1);
+					canvas.drawLine(rand(10, width - 10), rand(10, height - 10), rand(10, width - 10), rand(10, height - 10), randColorRgb(50, 255));
+				}
+			};
+
+			var frameRate = 0;
+			var frameCount = 0;
+			function redraw(time) {
+				now = Date.now();
+				++frameCount;
+				if (!lastRender)
+					lastRender = now;
+				else if (now - lastRender >= 1000) {
+					lastRender = now;
+					frameRate = frameCount;
+					frameCount = 0;
+				}
+
+				time *= 0.001;  // convert time to seconds
+
+				requestAnimationFrame(redraw);
+
+				draw(timeDelta);
+
+				canvas.fillRect(0, 0, 200, 100, '#000');
+				canvas.ctx2d.fillStyle = '#ffffff';
+				canvas.ctx2d.fillText("FrameRate: " + frameRate.toFixed(1) + ' Hz', 10, 10);
+				canvas.ctx2d.fillText("time: " + time.toFixed(2) + ' ms', 10, 30);
+
+				let imageData = canvas.ctx2d.getImageData(0, 0, width, height);
+				let midVal0 = imageData.data[(1 + height) * width / 2];
+				let midVal1 = imageData.data[(1 + height) * width / 2 + 1];
+				let midVal2 = imageData.data[(1 + height) * width / 2 + 2];
+				let midVal3 = imageData.data[(1 + height) * width / 2 + 3];
+				let midVal4 = imageData.data[(1 + height) * width / 2 + 4];
+
+				canvas.ctx2d.fillText("mVal: " + midVal0 + ". " + midVal1 + ". " + midVal2 + ". " + midVal3 + ". " + midVal4, 10, 50);
+				//canvas.ctx2d.fillText("mVal: " + midVal[0], 10, 50);
+				//canvas.ctx.fillStyle = '#00000000';
+			}
+
+
+			function handleKeyDown(e) {
+				//				//var Tastencode = event.which || event.keyCode; //deprecated
+				//				//var Tastencode = e.code;
+				//				switch (e.key) {
+				//					case "a":
+				//						if (ampVal > .00001)
+				//							ampVal /= 2;
+				//						else
+				//							ampVal = .00001;
+				//						break;
+				//					case "A":
+				//						if (ampVal < 128)
+				//							ampVal *= 2;
+				//						else
+				//							ampVal = 8;
+				//						break;
+				//					case "v":
+				//						amplify = !amplify;
+				//						break;
+				//					case "V":
+				//						autoAmplify = !autoAmplify;
+				//						break;
+				//					case "f":
+				//						freq -= 100;
+				//						if (freq < 100)
+				//							freq = 100;
+				//						break;
+				//					case "F":
+				//						freq += 100;
+				//						if (freq > 20000)
+				//							freq = 20000;
+				//						break;
+				//					case "N":
+				//						nachLeucht += 1;
+				//						if (nachLeucht > 100)
+				//							nachLeucht = 100;
+				//						break;
+				//					case "n":
+				//						nachLeucht -= 1;
+				//						if (nachLeucht < 1)
+				//							nachLeucht = 1;
+				//						break;
+				//			}
+			}
+
+			function resizeHandler() {
+				canvas_width = window.innerWidth;// || document.documentElement.clientWidth || document.body.clientWidth;
+				canvas_height = window.innerHeight;// || document.documentElement.clientHeight || document.body.clientHeight;;
+				//canvas_width = document.body.scrollWidth;
+				//canvas_height = document.body.clientHeight;
+				canvas.resize(canvas_width, canvas_height);
+				tempCanvas.resize(canvas_width, canvas_height);
+				width = canvas_width;
+				height = canvas_height;
+				console.log('Context size changed to ' + width + ' x ' + height);
+			}
+
+			//"Main"-Area
+			//deprecated
+			//document.onkeydown = getKeyCode;
+			//document.onkeyup = getKeyUpCode;
+			//document.onkeypress = getKeyPressCode;
+
+			//const input = document.querySelector("input");
+			//input.addEventListener("keydown", handleKeyDown);
+			document.onkeydown = handleKeyDown;
+			window.addEventListener('resize', resizeHandler);
+			resizeHandler();
+			//requestAnimationFrame(redraw);//first time
+			redraw();
+		}
+
+		main();
+	</script>
+
+</body>
+
+</html>

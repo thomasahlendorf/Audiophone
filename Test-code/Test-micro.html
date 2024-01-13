@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+
+	<canvas id="myCanvas" width="500" height="300" style="border:1px solid #c3c3c3;">
+		Your browser does not support the HTML5 canvas tag.
+	</canvas>
+
+	<script>
+
+		var canvas = document.getElementById('myCanvas');
+		var context = null;
+
+		//CONTEXT 2D
+		if (!!window.CanvasRenderingContext2D) {
+			context = canvas.getContext('2d');
+			context.clearRect(0, 0, canvas.width, canvas.height);
+
+			console.log('CONTEXT 2D SUPPORTED');
+		} else {
+			console.log('CONTEXT 2D NOT SUPPORTED');
+		}
+
+		// //WebGL
+		// var webgl = ['webgl', 'experimental-webgl', 'webkit-3d', 'moz-webgl'];
+		// 
+		// for (var i = 0, length = webgl.length; i < length; i++) {
+		//     try {
+		//         context = canvas.getContext(webgl[i]);
+		//         break;
+		//     } catch(e) {}
+		// }
+
+		if (context) {
+			console.log('WEBGL SUPPORTED');
+		} else {
+			console.log('WEBGL NOT SUPPORTED');
+		}
+
+
+		var audioContext = null;
+		var audioSource = null;
+		//var audioAnalyser = null;
+		//var audioGain = null;
+		//var audioData = null;
+		//var volume = null;
+
+		var dataArray = null;
+		var bufferLength = 0;
+
+		var col = 50;
+
+		var fpos = 0.0;
+		var freq = 1000.0;
+
+
+		const fftSize = 8192;
+		var myArrayBuffer = null;
+		var anotherArray = null;
+		var frameCount = 0;
+		//var nowBuffering = null;
+		var sampleRate = null;
+
+		var sampleAudioStream = function () {
+
+			const drawVisual = requestAnimationFrame(sampleAudioStream);
+
+			// audioAnalyser.getByteFrequencyData(audioData);
+			//audioAnalyser.getByteTimeDomainData(dataArray);
+			audioAnalyser.getFloatTimeDomainData(dataArray);
+
+			//const channel=0;
+			//nowBuffering = myArrayBuffer.getChannelData(channel);
+			//myArrayBuffer.copyFromChannel(anotherArray, 0, 0);
+			
+			// 
+			// for (var i = 0, length = audioData.length, sum = 0; i < length; i++) {
+			//     sum += audioData[i];
+			// }
+
+			//volume = sum / (length * 256);
+			
+			for (var i = 0, sum = 0, minm=0, maxm=0; i < bufferLength; i++) 
+			{
+			     sum += dataArray[i];
+				 if (dataArray[i]<minm)
+					minm=dataArray[i];
+				 if (dataArray[i]>maxm)
+					maxm=dataArray[i];
+			}
+			med = sum / (bufferLength);
+			amt = maxm-minm;
+			
+			context.beginPath();
+			context.fillStyle = "#F0F0F0";
+			context.fillRect(0, 0, fftSize, 300);
+
+			context.strokeStyle = 'hsl(' + col++ + ',100%,30%)';
+
+			let step = ~~(bufferLength / canvas.width);
+
+			//console.log("Step = " + step + " Len = " + bufferLength);
+
+			if (amt>0)
+			{
+			for (var i = 0; i < bufferLength; i += step) 
+			{
+				const y = ((dataArray[i]/amt/2 + 1) * canvas.height) / 4*3;
+
+				const x = ((Math.sin(fpos)*.5 + 1) * canvas.width) / 2;
+				fpos+=1000.0 * Math.PI / sampleRate;
+
+				if (i == 0)
+					context.moveTo(x, y);
+				else
+					context.lineTo(x, y);
+
+			}
+			}
+			context.stroke();
+
+		};
+
+
+		var audioSuccess = function (stream) {
+			//window.AudioContext = window.AudioContext || window.webkitAudioContext;
+			//console.log('Get AudioContext');
+			
+			audioContext = new AudioContext();
+			//audioContext = new (window.AudioContext || window.webkitAudioContext)();
+			sampleRate = audioContext.sampleRate;
+			//myArrayBuffer = audioContext.createBuffer(2, frameCount, audioContext.sampleRate);
+			//anotherArray = new Float32Array(frameCount);
+			//const source = audioCtx.createMediaElementSource(myMediaElement);
+
+			console.log('Sample Rate = ' + sampleRate);
+
+			//console.log('create MediaStreamSource ');
+			audioSource = audioContext.createMediaStreamSource(stream);
+
+			//console.log('create analyzer');
+			audioAnalyser = audioContext.createAnalyser();
+			audioAnalyser.fftSize = fftSize;
+			console.log('FFT Size = ' + fftSize);
+
+			bufferLength = audioAnalyser.frequencyBinCount;
+			console.log('Buffr Length = ' + bufferLength);
+			dataArray = new Float32Array(bufferLength);
+			//dataArray = new Uint8Array(bufferLength);
+
+			audioSource.connect(audioAnalyser);
+			//audioSource.connect(myArrayBuffer);
+			//audioSource.start();
+
+			//setInterval(sampleAudioStream, 200);
+			sampleAudioStream();
+
+			//volume = 0;
+		};
+
+		var audioStart = function () {
+			//let stream = null;
+
+			if (navigator.mediaDevices) {
+				console.log("getUserMedia supported.");
+				console.log('get Audio access');
+
+				//MediaDevices.getUserMedia = MediaDevices.getUserMedia || MediaDevices.webkitGetUserMedia;
+				try {
+					//stream =  navigator.mediaDevices.getUserMedia({ audio : true, video : false });
+					navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+						.then((stream) => {
+							/* use the stream */
+							console.log('Audio aktive = ' + stream);
+
+							audioSuccess(stream);
+						})
+
+				} catch (err) {
+					/* handle the error */
+					//console.log('Audio Error');
+					console.log(`The following gUM error occurred: ${err}`);
+				}
+			} else
+				//console.log('No Audio Devices');
+				console.log("getUserMedia not supported on your browser!");
+		};
+
+
+		audioStart();
+
+	</script>
+
+</body>
+
+</html>
