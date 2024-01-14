@@ -2,11 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch testblend.html",
+            "name": "Launch Index.html",
             "type": "firefox",
             "request": "launch",
             "reAttach": true,
-            "file": "${workspaceFolder}/testblend.html"
+            "file": "${workspaceFolder}/index.html"
         }
     ]
 }
